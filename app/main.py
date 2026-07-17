@@ -1,6 +1,8 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from app.services.watcher import start_watcher, stop_watcher
+from app.api.detection import router as detection_router
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -18,10 +20,8 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-@app.get("/health")
-@app.get("/api/health")
-async def health():
-    return {
-        "service": "detection",
-        "status": "healthy"
-    }
+app.include_router(
+    detection_router,
+    prefix="/api",
+    tags=["Detection"],
+)
