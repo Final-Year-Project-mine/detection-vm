@@ -1,3 +1,4 @@
+import os
 from fastapi import APIRouter
 from app.services.analyzer import analyze_file
 from app.models.schemas import (
@@ -5,6 +6,7 @@ from app.models.schemas import (
     AnalyzeResponse,
 )
 from app.core.config import settings
+from app.core.stats import stats
 
 
 
@@ -14,11 +16,21 @@ router = APIRouter()
 @router.get("/health")
 @router.get("/api/health")
 def health():
+
     return {
         "service": "detection",
-        "status": "healthy",
-    }
 
+        "watch_dir_exists":
+            os.path.exists(settings.watch_dir),
+
+        "backup_inbox_exists":
+            os.path.exists(settings.backup_inbox_dir),
+
+        "quarantine_exists":
+            os.path.exists(settings.quarantine_dir),
+
+        "status": "healthy"
+    }
 
 @router.post(
     "/analyze",
@@ -40,3 +52,7 @@ def service_info():
         "quarantine_dir": settings.quarantine_dir,
         "log_file": settings.log_file,
     }
+
+@router.get("/stats")
+def get_stats():
+    return stats

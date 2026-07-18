@@ -3,19 +3,15 @@ import time
 import logging
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
+
 from app.services.analyzer import analyze_file
 from app.services.router import route_file
-
 from app.core.config import settings
 
-#WATCH_DIR = "/mnt/prod/Prod_Files"
-#LOG_FILE = "/var/log/detector.log"
-
+# Setup basic logging configuration
 WATCH_DIR = settings.watch_dir
 LOG_FILE = settings.log_file
 
-
-# Setup basic logging configuration
 logging.basicConfig(
     filename=LOG_FILE,
     level=logging.INFO,
@@ -24,6 +20,7 @@ logging.basicConfig(
 
 # Global tracker for the observer thread
 observer = None
+
 
 class Handler(FileSystemEventHandler):
     def wait_for_file_stability(self, path):
@@ -50,7 +47,27 @@ class Handler(FileSystemEventHandler):
         try:
             verdict = analyze_file(path)
             route_file(path, verdict)
-            logging.info(f"{path},{verdict.name}")
+            
+            # 1. Custom logger execution
+            from app.core.logger import logger
+            logger.info(
+                f"{path} -> {verdict.name}"
+            )
+            
+            # 2. Update Runtime Statistics
+            from app.core.stats import stats
+            from datetime import datetime
+            
+            stats["processed"] += 1
+            if verdict.name == "CLEAN":
+                stats["clean"] += 1
+            elif verdict.name == "SUSPICIOUS":
+                stats["suspicious"] += 1
+            elif verdict.name == "MALICIOUS":
+                stats["malicious"] += 1
+            
+            stats["last_detection"] = datetime.utcnow().isoformat()
+
         except Exception as e:
             print(f"[-] Error processing {path}: {str(e)}")
 

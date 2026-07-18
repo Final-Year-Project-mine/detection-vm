@@ -22,7 +22,11 @@ class Handler(FileSystemEventHandler):
         verdict = analyze_file(path)
         route_file(path, verdict)
         with open(LOG_FILE, "a") as f:
-            f.write(f"{time.time()},{path},{verdict.name}\n")
+            from app.core.logger import logger
+
+        logger.info(
+            f"{path} -> {verdict.name}"
+        )
 
 if __name__ == "__main__":
     event_handler = Handler()
